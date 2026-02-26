@@ -12,6 +12,8 @@ import markdown
 from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers import get_lexer_by_name, TextLexer
+from rich.console import Console
+from rich.markdown import Markdown as RichMarkdown
 
 
 # ANSI 256-color codes for browser-like styling
@@ -99,6 +101,7 @@ class RenderOptions:
     theme: str = "light"
     code_theme: str = "monokai"
     no_color: bool = False
+    use_rich: bool = False
 
 
 class TerminalRenderer:
@@ -116,6 +119,8 @@ class TerminalRenderer:
         # Initialize with Windows Terminal detection
         self.is_windows_terminal = Colors.IS_WINDOWS_TERMINAL
         self.is_windows = Colors.IS_WINDOWS
+        
+        # Rich console will be created lazily when needed
     
     def _get_color(self, color_code: str) -> str:
         """Get color code, respecting no_color option."""
@@ -125,12 +130,11 @@ class TerminalRenderer:
     
     def render(self, markdown_text: str) -> str:
         """Render markdown text to ANSI terminal output."""
+        if self.options.use_rich:
+            return self._render_with_rich(markdown_text)
+        
         self.md.reset()
-        
-        # Convert markdown to HTML
         html = self.md.convert(markdown_text)
-        
-        # Convert HTML to ANSI
         return self._html_to_ansi(html)
     
     def _html_to_ansi(self, html: str) -> str:
@@ -387,10 +391,34 @@ class TerminalRenderer:
             result = ansi_escape.sub('', result)
         
         return result
+    
+    def _render_with_rich(self, markdown_text: str) -> str:
+        """Render markdown using Rich for pretty terminal output."""
+        # Create Rich console if not already created
+        if not hasattr(self, 'rich_console'):
+            self.rich_console = Console(
+                force_terminal=True,
+                force_jupyter=False,
+                width=self.options.width,
+                record=True
+            )
+        
+        # Create Rich markdown renderer
+        rich_md = RichMarkdown(
+            markdown_text,
+            code_theme=self.options.code_theme
+        )
+        
+        # Render to string
+        self.rich_console.print(rich_md)
+        output = self.rich_console.export_text()
+        self.rich_console.clear()
+        
+        return output
 
 
-def render_markdown(markdown_text: str, width: int = 80, theme: str = "light") -> str:
+def render_markdown(markdown_text: str, width: int = 80, theme: str = "light", use_rich: bool = False) -> str:
     """Convenience function to render markdown."""
-    options = RenderOptions(width=width, theme=theme)
+    options = RenderOptions(width=width, theme=theme, use_rich=use_rich)
     renderer = TerminalRenderer(options)
     return renderer.render(markdown_text)

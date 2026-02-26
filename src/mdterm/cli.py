@@ -59,6 +59,11 @@ def main(
         "--code-theme",
         help="Code syntax highlighting theme",
     ),
+    use_rich: bool = typer.Option(
+        False,
+        "--use-rich",
+        help="Use Rich for pretty rendering with headers, tables, etc.",
+    ),
     no_color: bool = typer.Option(
         False,
         "--no-color",
@@ -93,6 +98,8 @@ def main(
         width=terminal_width,
         theme=theme,
         code_theme=code_theme,
+        use_rich=use_rich,
+        no_color=no_color,
     )
     renderer = TerminalRenderer(options)
     
