@@ -5,15 +5,9 @@ import os
 from pathlib import Path
 from typing import Optional
 
-# Set UTF-8 encoding for Windows
-if sys.platform == "win32":
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
-
 import typer
 
-from mdterm.renderer import TerminalRenderer, RenderOptions
+from mdterm.renderer import TerminalRenderer, RenderOptions, Colors
 
 app = typer.Typer(
     name="mdterm",

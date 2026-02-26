@@ -1,6 +1,10 @@
 """Markdown to terminal renderer with browser-like styling."""
 
 import re
+import sys
+import platform
+import os
+import io
 from dataclasses import dataclass
 from typing import Optional, List
 
@@ -19,7 +23,11 @@ class Colors:
     ITALIC = "\033[3m"
     UNDERLINE = "\033[4m"
     
-    # Headings - using 256-color blue
+    # Detect Windows Terminal and platform
+    IS_WINDOWS = platform.system() == "Windows"
+    IS_WINDOWS_TERMINAL = IS_WINDOWS and "WT_SESSION" in os.environ
+    
+    # Use 256-color codes for Windows Terminal
     HEADING1 = "\033[38;5;33m"     # Blue
     HEADING2 = "\033[38;5;33m"     # Blue
     HEADING3 = "\033[38;5;33m"     # Blue
@@ -50,6 +58,27 @@ class Colors:
     # Blockquote
     BLOCKQUOTE_BORDER = "\033[38;5;250m"
     BLOCKQUOTE_TEXT = "\033[38;5;244m"
+    
+    # Windows Terminal specific adjustments
+    @staticmethod
+    def get_color(color_code: str) -> str:
+        """Get appropriate color code for current platform."""
+        if Colors.IS_WINDOWS_TERMINAL:
+            # Use 256-color codes for Windows Terminal
+            return color_code
+        else:
+            # Use standard ANSI codes for other platforms
+            return color_code
+    
+    @staticmethod
+    def configure_windows_output():
+        """Configure Windows output for proper UTF-8 encoding."""
+        if Colors.IS_WINDOWS:
+            # Only reconfigure if not already a TextIOWrapper with utf-8
+            if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
+                sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+            if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
+                sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
 
 
 # Heading styles
@@ -69,6 +98,7 @@ class RenderOptions:
     width: int = 80
     theme: str = "light"
     code_theme: str = "monokai"
+    no_color: bool = False
 
 
 class TerminalRenderer:
@@ -79,6 +109,19 @@ class TerminalRenderer:
         self.md = markdown.Markdown(
             extensions=['extra', 'tables', 'fenced_code']
         )
+        
+        # Configure Windows output if needed
+        Colors.configure_windows_output()
+        
+        # Initialize with Windows Terminal detection
+        self.is_windows_terminal = Colors.IS_WINDOWS_TERMINAL
+        self.is_windows = Colors.IS_WINDOWS
+    
+    def _get_color(self, color_code: str) -> str:
+        """Get color code, respecting no_color option."""
+        if self.options.no_color:
+            return ""
+        return Colors.get_color(color_code)
     
     def render(self, markdown_text: str) -> str:
         """Render markdown text to ANSI terminal output."""
@@ -163,11 +206,15 @@ class TerminalRenderer:
                 match = re.search(r'<li>(.*?)</li>', line)
                 if match:
                     content = match.group(1)
-                    result.append(f"  {Colors.LIST_MARKER}•{Colors.RESET} {self._render_inline(content)}")
+                    marker_color = self._get_color(Colors.LIST_MARKER)
+                    reset = Colors.RESET if marker_color else ""
+                    result.append(f"  {marker_color}•{reset} {self._render_inline(content)}")
             
             # Handle horizontal rule
             elif '<hr />' in line or '<hr/>' in line:
-                result.append(Colors.HR_COLOR + "─" * self.options.width + Colors.RESET)
+                hr_color = self._get_color(Colors.HR_COLOR)
+                reset = Colors.RESET if hr_color else ""
+                result.append(hr_color + "─" * self.options.width + reset)
             
             # Handle paragraph
             elif line.startswith('<p>') and line.endswith('</p>'):
@@ -187,15 +234,17 @@ class TerminalRenderer:
         content = re.sub(r'<[^>]+>', '', content)
         content = content.strip()
         
-        style = HEADING_STYLES.get(level, HEADING_STYLES[6])
+        # Use appropriate color
+        heading_color = self._get_color(HEADING_STYLES.get(level, HEADING_STYLES[6]))
+        underline_color = self._get_color(Colors.HR_COLOR)
         
         underline = ""
         if level == 1:
-            underline = "\n" + Colors.HR_COLOR + "═" * min(len(content), self.options.width) + Colors.RESET
+            underline = "\n" + underline_color + "═" * min(len(content), self.options.width) + (Colors.RESET if underline_color else "")
         elif level == 2:
-            underline = "\n" + Colors.HR_COLOR + "─" * min(len(content), self.options.width) + Colors.RESET
+            underline = "\n" + underline_color + "─" * min(len(content), self.options.width) + (Colors.RESET if underline_color else "")
         
-        return f"{style}{content}{Colors.RESET}{underline}"
+        return f"{heading_color}{content}{underline}"
     
     def _render_blockquote(self, lines: List[str]) -> str:
         """Render a blockquote with browser-like styling."""
@@ -212,8 +261,12 @@ class TerminalRenderer:
                 processed_lines.append(line)
         
         result = []
+        border_color = self._get_color(Colors.BLOCKQUOTE_BORDER)
+        text_color = self._get_color(Colors.BLOCKQUOTE_TEXT)
+        reset = Colors.RESET if (border_color or text_color) and not self.options.no_color else ""
+        
         for line in processed_lines:
-            result.append(f"{Colors.BLOCKQUOTE_BORDER}│{Colors.RESET} {Colors.BLOCKQUOTE_TEXT}{line}{Colors.RESET}")
+            result.append(f"{border_color}│{reset} {text_color}{line}{reset}")
         
         return '\n'.join(result)
     
@@ -223,7 +276,7 @@ class TerminalRenderer:
             return ""
         
         # Parse table rows - the HTML is multi-line
-        full_html = '\n'.join(lines)
+        full_html = '\\n'.join(lines)
         
         # Find all rows
         rows = []
@@ -268,8 +321,9 @@ class TerminalRenderer:
             for i, cell in enumerate(cells):
                 if i < len(col_widths):
                     width = col_widths[i]
-                    style = Colors.TABLE_HEADER if is_header else ""
-                    cell_str = f"{style}{cell:<{width}}{Colors.RESET}" if is_header else f"{cell:<{width}}"
+                    style = self._get_color(Colors.TABLE_HEADER) if is_header else ""
+                    reset = Colors.RESET if style else ""
+                    cell_str = f"{style}{cell:<{width}}{reset}" if is_header else f"{cell:<{width}}"
                     row_cells.append(cell_str)
             
             row_str = "│ " + " │ ".join(row_cells) + " │"
@@ -287,24 +341,26 @@ class TerminalRenderer:
     
     def _render_inline(self, content: str) -> str:
         """Render inline HTML elements."""
+        reset = Colors.RESET if not self.options.no_color else ""
+        
         # Handle strong/bold
         content = re.sub(r'<strong>(.*?)</strong>', 
-                        rf"{Colors.STRONG}\1{Colors.RESET}", 
+                        rf"{self._get_color(Colors.STRONG)}\1{reset}", 
                         content)
         
         # Handle emphasis/italic  
         content = re.sub(r'<em>(.*?)</em>', 
-                        rf"{Colors.EMPHASIS}\1{Colors.RESET}", 
+                        rf"{self._get_color(Colors.EMPHASIS)}\1{reset}", 
                         content)
         
         # Handle links
         content = re.sub(r'<a href="([^"]+)">(.*?)</a>', 
-                        rf"{Colors.LINK}\2{Colors.RESET} (\1)", 
+                        rf"{self._get_color(Colors.LINK)}\2{reset} (\1)", 
                         content)
         
         # Handle code
         content = re.sub(r'<code>(.*?)</code>', 
-                        rf"{Colors.CODE}\1{Colors.RESET}", 
+                        rf"{self._get_color(Colors.CODE)}\1{reset}", 
                         content)
         
         return content
@@ -323,6 +379,12 @@ class TerminalRenderer:
         
         formatter = TerminalFormatter(bg=self.options.theme)
         result = highlight(code, lexer, formatter)
+        
+        # Remove ANSI codes if no_color is enabled
+        if self.options.no_color:
+            import re
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            result = ansi_escape.sub('', result)
         
         return result
 

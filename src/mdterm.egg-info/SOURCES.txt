@@ -1,4 +1,5 @@
 LICENSE
+README.md
 pyproject.toml
 src/mdterm/__init__.py
 src/mdterm/cli.py
@@ -9,3 +10,4 @@ src/mdterm.egg-info/dependency_links.txt
 src/mdterm.egg-info/entry_points.txt
 src/mdterm.egg-info/requires.txt
 src/mdterm.egg-info/top_level.txt
+tests/test_renderer.py
