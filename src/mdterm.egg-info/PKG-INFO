@@ -1,0 +1,25 @@
+Metadata-Version: 2.4
+Name: mdterm
+Version: 0.1.0
+Summary: Render markdown in terminal with browser-like styling
+Author-email: Shafiq Jetha <shafiq.jetha@outlook.com>
+License: MIT
+Keywords: markdown,terminal,cli,ansi
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: markdown>=3.4
+Requires-Dist: Pygments>=2.17
+Requires-Dist: colorama>=0.4
+Requires-Dist: typer>=0.9
+Requires-Dist: rich>=13.0
+Dynamic: license-file

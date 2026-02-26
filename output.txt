@@ -1,0 +1,25 @@
+[38;5;33m[1mWelcome to mdterm[0m
+[38;5;250m═════════════════[0m
+This is a test markdown file that demonstrates [1mbrowser-like[0m rendering in the terminal.
+[38;5;33m[1mFeatures[0m
+[38;5;250m────────[0m
+  [38;5;244m•[0m Headings with blue color
+  [38;5;244m•[0m Links with underline
+  [38;5;244m•[0m Code blocks with syntax highlighting
+  [38;5;244m•[0m Blockquotes with border
+  [38;5;244m•[0m Tables with box-drawing characters
+[38;5;33m[1mCode Example[0m
+[38;5;250m────────────[0m
+[48;5;254m    [36mprint[39;49;00m(&quot;Hello, World[04m[91m![39;49;00m&quot;)[37m[39;49;00m
+[0m
+[38;5;33m[1mLinks[0m
+[38;5;250m─────[0m
+Check out [38;5;32mGitHub[0m (https://github.com) for more info.
+[38;5;33m[1mBlockquote[0m
+[38;5;250m──────────[0m
+[38;5;33m[1mTable[0m
+[38;5;250m─────[0m
+[38;5;33m[1mHorizontal Rule[0m
+[38;5;250m───────────────[0m
+[38;5;250m────────────────────────────────────────────────────────────────────────────────[0m
+That's all for now!

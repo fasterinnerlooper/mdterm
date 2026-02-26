@@ -1,0 +1,2 @@
+[console_scripts]
+mdterm = mdterm.cli:app

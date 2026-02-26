@@ -1,0 +1,334 @@
+"""Markdown to terminal renderer with browser-like styling."""
+
+import re
+from dataclasses import dataclass
+from typing import Optional, List
+
+import markdown
+from pygments import highlight
+from pygments.formatters.terminal import TerminalFormatter
+from pygments.lexers import get_lexer_by_name, TextLexer
+
+
+# ANSI 256-color codes for browser-like styling
+class Colors:
+    RESET = "\033[0m"
+    
+    # Standard bold
+    BOLD = "\033[1m"
+    ITALIC = "\033[3m"
+    UNDERLINE = "\033[4m"
+    
+    # Headings - using 256-color blue
+    HEADING1 = "\033[38;5;33m"     # Blue
+    HEADING2 = "\033[38;5;33m"     # Blue
+    HEADING3 = "\033[38;5;33m"     # Blue
+    HEADING4 = "\033[38;5;33m"     # Blue
+    HEADING5 = "\033[38;5;33m"     # Blue
+    HEADING6 = "\033[38;5;33m"     # Blue
+    
+    # Links
+    LINK = "\033[38;5;32m"        # Green
+    
+    # Code
+    CODE = "\033[38;5;196m"        # Red
+    
+    # Semantic
+    STRONG = "\033[1m"
+    EMPHASIS = "\033[3m"
+    
+    # Lists
+    LIST_MARKER = "\033[38;5;244m"  # Gray
+    
+    # Tables
+    TABLE_BORDER = "\033[38;5;250m"  # Light gray
+    TABLE_HEADER = "\033[1m"
+    
+    # Horizontal rule
+    HR_COLOR = "\033[38;5;250m"
+    
+    # Blockquote
+    BLOCKQUOTE_BORDER = "\033[38;5;250m"
+    BLOCKQUOTE_TEXT = "\033[38;5;244m"
+
+
+# Heading styles
+HEADING_STYLES = {
+    1: Colors.HEADING1 + Colors.BOLD,
+    2: Colors.HEADING2 + Colors.BOLD,
+    3: Colors.HEADING3 + Colors.BOLD,
+    4: Colors.HEADING4 + Colors.BOLD,
+    5: Colors.HEADING5 + Colors.BOLD,
+    6: Colors.HEADING6 + Colors.BOLD,
+}
+
+
+@dataclass
+class RenderOptions:
+    """Options for rendering markdown."""
+    width: int = 80
+    theme: str = "light"
+    code_theme: str = "monokai"
+
+
+class TerminalRenderer:
+    """Renders markdown to ANSI terminal output with browser-like styling."""
+    
+    def __init__(self, options: Optional[RenderOptions] = None):
+        self.options = options or RenderOptions()
+        self.md = markdown.Markdown(
+            extensions=['extra', 'tables', 'fenced_code']
+        )
+    
+    def render(self, markdown_text: str) -> str:
+        """Render markdown text to ANSI terminal output."""
+        self.md.reset()
+        
+        # Convert markdown to HTML
+        html = self.md.convert(markdown_text)
+        
+        # Convert HTML to ANSI
+        return self._html_to_ansi(html)
+    
+    def _html_to_ansi(self, html: str) -> str:
+        """Convert HTML to ANSI terminal output."""
+        # Split into lines but preserve structure
+        lines = html.split('\n')
+        result: List[str] = []
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Handle code blocks
+            if '<pre><code' in line:
+                # Extract language if present
+                code_language = ""
+                match = re.search(r'class="language-(\w+)"', line)
+                if match:
+                    code_language = match.group(1)
+                
+                # Extract any content on the same line as the opening tag
+                code_lines = []
+                code_match = re.search(r'<pre><code[^>]*>(.*)', line)
+                if code_match:
+                    first_line = code_match.group(1).rstrip()
+                    if first_line:
+                        code_lines.append(first_line)
+                
+                # Collect remaining code block content
+                i += 1
+                while i < len(lines) and '</code></pre>' not in lines[i]:
+                    code_lines.append(lines[i].rstrip())
+                    i += 1
+                
+                # Render code block
+                if code_lines:
+                    code_text = '\n'.join(code_lines)
+                    highlighted = self._highlight_code(code_text, code_language)
+                    result.append(highlighted)
+                continue
+            
+            # Handle headings
+            if match := re.match(r'<h([1-6])>(.*?)</h\1>', line, re.DOTALL):
+                level = int(match.group(1))
+                content = match.group(2)
+                result.append(self._render_heading(level, content))
+            
+            # Handle blockquote
+            elif line.startswith('<blockquote>'):
+                bq_lines = []
+                i += 1
+                while i < len(lines) and '</blockquote>' not in lines[i]:
+                    bq_lines.append(lines[i].strip())
+                    i += 1
+                result.append(self._render_blockquote(bq_lines))
+            
+            # Handle table
+            elif '<table>' in line:
+                table_lines = []
+                i += 1
+                while i < len(lines) and '</table>' not in lines[i]:
+                    table_lines.append(lines[i])
+                    i += 1
+                result.append(self._render_table(table_lines))
+            
+            # Handle list
+            elif line.startswith('<ul>') or line.startswith('<ol>'):
+                i += 1  # Skip opening tag
+                continue
+            
+            # Handle list items
+            elif '<li>' in line:
+                match = re.search(r'<li>(.*?)</li>', line)
+                if match:
+                    content = match.group(1)
+                    result.append(f"  {Colors.LIST_MARKER}•{Colors.RESET} {self._render_inline(content)}")
+            
+            # Handle horizontal rule
+            elif '<hr />' in line or '<hr/>' in line:
+                result.append(Colors.HR_COLOR + "─" * self.options.width + Colors.RESET)
+            
+            # Handle paragraph
+            elif line.startswith('<p>') and line.endswith('</p>'):
+                content = line[3:-4]
+                result.append(self._render_inline(content))
+            
+            # Handle non-paragraph content
+            elif line and not line.startswith('<'):
+                result.append(self._render_inline(line))
+            
+            i += 1
+        
+        return '\n'.join(result)
+    
+    def _render_heading(self, level: int, content: str) -> str:
+        """Render a heading with browser-like styling."""
+        content = re.sub(r'<[^>]+>', '', content)
+        content = content.strip()
+        
+        style = HEADING_STYLES.get(level, HEADING_STYLES[6])
+        
+        underline = ""
+        if level == 1:
+            underline = "\n" + Colors.HR_COLOR + "═" * min(len(content), self.options.width) + Colors.RESET
+        elif level == 2:
+            underline = "\n" + Colors.HR_COLOR + "─" * min(len(content), self.options.width) + Colors.RESET
+        
+        return f"{style}{content}{Colors.RESET}{underline}"
+    
+    def _render_blockquote(self, lines: List[str]) -> str:
+        """Render a blockquote with browser-like styling."""
+        # Process each line
+        processed_lines = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith('<p>'):
+                line = line[3:]
+            if line.endswith('</p>'):
+                line = line[:-4]
+            line = self._render_inline(line)
+            if line.strip():
+                processed_lines.append(line)
+        
+        result = []
+        for line in processed_lines:
+            result.append(f"{Colors.BLOCKQUOTE_BORDER}│{Colors.RESET} {Colors.BLOCKQUOTE_TEXT}{line}{Colors.RESET}")
+        
+        return '\n'.join(result)
+    
+    def _render_table(self, lines: List[str]) -> str:
+        """Render a table with browser-like styling."""
+        if not lines:
+            return ""
+        
+        # Parse table rows - the HTML is multi-line
+        full_html = '\n'.join(lines)
+        
+        # Find all rows
+        rows = []
+        
+        # Get header
+        thead_match = re.search(r'<thead>(.*?)</thead>', full_html, re.DOTALL)
+        if thead_match:
+            thead = thead_match.group(1)
+            header_cells = re.findall(r'<th>(.*?)</th>', thead, re.DOTALL)
+            if header_cells:
+                clean_cells = [re.sub(r'<[^>]+>', '', c).strip() for c in header_cells]
+                rows.append((True, clean_cells))
+        
+        # Get body
+        tbody_match = re.search(r'<tbody>(.*?)</tbody>', full_html, re.DOTALL)
+        if tbody_match:
+            tbody = tbody_match.group(1)
+            tr_matches = re.findall(r'<tr>(.*?)</tr>', tbody, re.DOTALL)
+            for tr in tr_matches:
+                cells = re.findall(r'<td>(.*?)</td>', tr, re.DOTALL)
+                if cells:
+                    clean_cells = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+                    rows.append((False, clean_cells))
+        
+        if not rows:
+            return ""
+        
+        # Calculate column widths
+        num_cols = max(len(row[1]) for row in rows) if rows else 0
+        col_widths = [0] * num_cols
+        for is_header, cells in rows:
+            for i, cell in enumerate(cells):
+                if i < len(col_widths):
+                    col_widths[i] = max(col_widths[i], len(cell))
+        
+        # Render table
+        result = []
+        
+        for is_header, cells in rows:
+            # Render cells
+            row_cells = []
+            for i, cell in enumerate(cells):
+                if i < len(col_widths):
+                    width = col_widths[i]
+                    style = Colors.TABLE_HEADER if is_header else ""
+                    cell_str = f"{style}{cell:<{width}}{Colors.RESET}" if is_header else f"{cell:<{width}}"
+                    row_cells.append(cell_str)
+            
+            row_str = "│ " + " │ ".join(row_cells) + " │"
+            result.append(row_str)
+            
+            # Add separator after header
+            if is_header:
+                sep_cells = []
+                for width in col_widths:
+                    sep_cells.append("─" * width)
+                sep = "├─" + "─┼─".join(sep_cells) + "─┤"
+                result.append(sep)
+        
+        return '\n'.join(result)
+    
+    def _render_inline(self, content: str) -> str:
+        """Render inline HTML elements."""
+        # Handle strong/bold
+        content = re.sub(r'<strong>(.*?)</strong>', 
+                        rf"{Colors.STRONG}\1{Colors.RESET}", 
+                        content)
+        
+        # Handle emphasis/italic  
+        content = re.sub(r'<em>(.*?)</em>', 
+                        rf"{Colors.EMPHASIS}\1{Colors.RESET}", 
+                        content)
+        
+        # Handle links
+        content = re.sub(r'<a href="([^"]+)">(.*?)</a>', 
+                        rf"{Colors.LINK}\2{Colors.RESET} (\1)", 
+                        content)
+        
+        # Handle code
+        content = re.sub(r'<code>(.*?)</code>', 
+                        rf"{Colors.CODE}\1{Colors.RESET}", 
+                        content)
+        
+        return content
+    
+    def _highlight_code(self, code: str, language: str) -> str:
+        """Highlight code using Pygments."""
+        code = code.rstrip('\n')
+        
+        try:
+            if language:
+                lexer = get_lexer_by_name(language)
+            else:
+                lexer = TextLexer()
+        except:
+            lexer = TextLexer()
+        
+        formatter = TerminalFormatter(bg=self.options.theme)
+        result = highlight(code, lexer, formatter)
+        
+        return result
+
+
+def render_markdown(markdown_text: str, width: int = 80, theme: str = "light") -> str:
+    """Convenience function to render markdown."""
+    options = RenderOptions(width=width, theme=theme)
+    renderer = TerminalRenderer(options)
+    return renderer.render(markdown_text)
