@@ -169,11 +169,22 @@ class TerminalRenderer:
                     code_lines.append(lines[i].rstrip())
                     i += 1
                 
-                # Render code block
+        # Render code block
                 if code_lines:
                     code_text = '\n'.join(code_lines)
                     highlighted = self._highlight_code(code_text, code_language)
-                    result.append(highlighted)
+                    # Add border and styling for code blocks
+                    border_color = self._get_color(Colors.TABLE_BORDER)
+                    reset = Colors.RESET if border_color else ""
+                    code_lines = highlighted.split('\n')
+                    max_width = max(len(line) for line in code_lines) if code_lines else 0
+                    width = min(max_width + 4, self.options.width)
+                    
+                    result.append(f"{border_color}┌{'─' * (width - 2)}┐{reset}")
+                    for line in code_lines:
+                        line = line[:width - 4]  # Truncate if too long
+                        result.append(f"{border_color}│{reset} {line}{' ' * (width - len(line) - 4)}{border_color}│{reset}")
+                    result.append(f"{border_color}└{'─' * (width - 2)}┘{reset}")
                 continue
             
             # Handle headings
@@ -269,8 +280,12 @@ class TerminalRenderer:
         text_color = self._get_color(Colors.BLOCKQUOTE_TEXT)
         reset = Colors.RESET if (border_color or text_color) and not self.options.no_color else ""
         
+        # Add blockquote border with proper box drawing
+        result.append(f"{border_color}┌{'─' * (self.options.width - 2)}┐{reset}")
         for line in processed_lines:
-            result.append(f"{border_color}│{reset} {text_color}{line}{reset}")
+            line = line[:self.options.width - 4]  # Truncate if too long
+            result.append(f"{border_color}│{reset} {text_color}{line}{' ' * (self.options.width - len(line) - 4)}{border_color}│{reset}")
+        result.append(f"{border_color}└{'─' * (self.options.width - 2)}┘{reset}")
         
         return '\n'.join(result)
     
@@ -280,7 +295,7 @@ class TerminalRenderer:
             return ""
         
         # Parse table rows - the HTML is multi-line
-        full_html = '\\n'.join(lines)
+        full_html = '\n'.join(lines)
         
         # Find all rows
         rows = []
@@ -316,8 +331,16 @@ class TerminalRenderer:
                 if i < len(col_widths):
                     col_widths[i] = max(col_widths[i], len(cell))
         
-        # Render table
+        # Render table with box drawing
         result = []
+        
+        # Header separator
+        if rows and rows[0][0]:  # First row is header
+            header_sep = ""
+            for i, width in enumerate(col_widths):
+                sep_char = "┬" if i < len(col_widths) - 1 else "┐"
+                header_sep += '─' * (width + 2) + sep_char
+            result.append(header_sep)
         
         for is_header, cells in rows:
             # Render cells
@@ -337,9 +360,16 @@ class TerminalRenderer:
             if is_header:
                 sep_cells = []
                 for width in col_widths:
-                    sep_cells.append("─" * width)
+                    sep_cells.append('─' * width)
                 sep = "├─" + "─┼─".join(sep_cells) + "─┤"
                 result.append(sep)
+        
+        # Bottom border
+        bottom_sep = ""
+        for i, width in enumerate(col_widths):
+            sep_char = "┴" if i < len(col_widths) - 1 else "┘"
+            bottom_sep += '─' * (width + 2) + sep_char
+        result.append(bottom_sep)
         
         return '\n'.join(result)
     
@@ -381,7 +411,10 @@ class TerminalRenderer:
         except:
             lexer = TextLexer()
         
-        formatter = TerminalFormatter(bg=self.options.theme)
+        formatter = TerminalFormatter(
+            bg=self.options.theme,
+            style=self.options.code_theme
+        )
         result = highlight(code, lexer, formatter)
         
         # Remove ANSI codes if no_color is enabled
