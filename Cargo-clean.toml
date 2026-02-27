@@ -1,0 +1,15 @@
+[package]
+name = "mdterm-chafa"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fontdue = "0.7"
+image = "0.24"
+ratatui = "0.26"
+crossterm = "0.27"
+serde = { version = "1.0", features = ["derive"] }
+clap = { version = "4.4", features = ["derive"] }
+atty = "0.2"
+lazy_static = "1.4"
+regex = "1.9"
