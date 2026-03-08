@@ -29,23 +29,23 @@ struct Args {
     command: Option<Commands>,
 
     /// Terminal width in columns (for image conversion)
-    #[arg(short = 'w', long = "width", default_value_t = 80)]
+    #[arg(short = 'w', long = "width", default_value_t = 80, global = true)]
     width: u32,
 
     /// Terminal height in rows (for image conversion)
-    #[arg(short = 'H', long = "height", default_value_t = 24)]
+    #[arg(short = 'H', long = "height", default_value_t = 24, global = true)]
     height: u32,
 
     /// Output format: ansi, truecolor, sixel, kitty, iterm2
-    #[arg(short = 'f', long = "format", default_value = "ansi")]
+    #[arg(short = 'f', long = "format", default_value = "ansi", global = true)]
     format: String,
 
     /// Disable dithering
-    #[arg(long = "no-dither")]
+    #[arg(long = "no-dither", global = true)]
     no_dither: bool,
 
     /// Verbose output
-    #[arg(short = 'v', long = "verbose")]
+    #[arg(short = 'v', long = "verbose", global = true)]
     verbose: bool,
 }
 
@@ -244,8 +244,9 @@ fn render_markdown(
 
     // Calculate viewport dimensions
     // Each character cell is roughly 8x16 pixels in monospace
-    // For good quality, we need ~2x horizontal resolution
-    let viewport_width = args.width * 10;
+    // For high resolution, we use ~4x horizontal resolution, minimum 1024x768
+    let viewport_width = (args.width * 20).max(1024);
+    let viewport_height = (args.height * 20).max(768);
     let viewport_height = args.height * 20;
 
     let terminal_output = if image::check_chrome_available() {

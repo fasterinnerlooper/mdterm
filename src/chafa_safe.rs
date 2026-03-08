@@ -37,7 +37,6 @@
 //! ```
 
 use anyhow::{Context, Result};
-use std::ffi::CString;
 use chafa_sys as sys;
 
 /// A memory-safe wrapper around `ChafaSymbolMap`
@@ -285,9 +284,11 @@ impl SafeCanvas {
 
         let result = unsafe {
             let gstr_ref = gstr.as_ref().context("GString pointer is invalid")?;
-            let cstring = CString::from_raw(gstr_ref.str);
-            let bytes = cstring.into_bytes();
-            String::from_utf8_lossy(&bytes).into_owned()
+            // Use CStr::from_ptr to read the string without taking ownership
+            let cstr = std::ffi::CStr::from_ptr(gstr_ref.str);
+            cstr.to_string_lossy().into_owned()
+            // Note: we don't free the GString here because chafa owns it
+            // and will clean it up when the canvas is dropped
         };
 
         Ok(result)

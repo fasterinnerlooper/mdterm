@@ -159,8 +159,6 @@ pub fn png_to_terminal_art(png_bytes: &[u8], config: &ChafaConfig) -> Result<Str
         .context("Failed to create canvas config")?
         .with_geometry(config.width, config.height)
         .context("Failed to set canvas geometry")?
-        .with_color_space(sys::CHAFA_COLOR_TYPERGBA8 as u32)
-        .context("Failed to set color space")?
         .with_symbol_map(&symbol_map)
         .context("Failed to set symbol map")?;
     
@@ -184,17 +182,28 @@ pub fn png_to_terminal_art(png_bytes: &[u8], config: &ChafaConfig) -> Result<Str
     ).context("Failed to draw pixels to canvas")?;
     
     // Step 5: Convert to the requested output format
-    let mut output = match config.format {
+    let output = match config.format {
         OutputFormat::Ansi | OutputFormat::TrueColor => {
-            // `build_ansi` is the only direct API from libchafa; it produces
-            // foreground-coloured spaces which look invisible on dark
-            // backgrounds.  The command‑line tool uses a terminfo-based printing
-            // path that prefers background fills, so we mimic that here by
-            // post‑processing the escape codes.  (Later we may switch to
-            // `chafa_canvas_print` once terminfo bindings are added.)
-            let ansi = canvas.build_ansi()
-                .context("Failed to build ANSI output")?;
-            fix_ansi_backgrounds(&ansi)
+            // Use the external chafa CLI for ANSI/TrueColor output to ensure reliability
+            let fmt_arg = "symbols";
+            
+            let mut tmp = tempfile::NamedTempFile::new()
+                .context("failed to create temporary file for chafa")?;
+            tmp.write_all(png_bytes)
+                .context("failed to write PNG to temp file")?;
+
+            let child = std::process::Command::new("chafa")
+                .arg("-f")
+                .arg(fmt_arg)
+                .arg(if config.format == OutputFormat::TrueColor { "--colors=full" } else { "--colors=16" })
+                .arg(tmp.path())
+                .output()
+                .context("failed to execute chafa command")?;
+            if !child.status.success() {
+                anyhow::bail!("chafa terminated with status {:?}", child.status);
+            }
+            String::from_utf8(child.stdout)
+                .context("chafa output was not valid UTF-8")?
         }
         OutputFormat::Sixel | OutputFormat::Kitty | OutputFormat::ITerm2 => {
             // fall back to the external `chafa` binary; this keeps us in sync
