@@ -1,17 +1,47 @@
 [package]
-name = "mdterm-chafa"
+name = "mdterm"
 version = "0.1.0"
 edition = "2021"
+description = "Markdown terminal viewer with three-stage pipeline: Markdown→HTML→PNG→Terminal art"
+authors = ["Shafiq Jetha <shafiq.jetha@outlook.com>"]
+license = "MIT"
+repository = ""
 
 [dependencies]
-fontdue = "0.7"
-image = "0.24"
-ratatui = "0.26"
-ratatui-image = "1.0"
-crossterm = "0.27"
-serde = { version = "1.0", features = ["derive"] }
+# Stage 1: Markdown → HTML
+comrak = { version = "0.31", default-features = false }
+
+# Stage 2: HTML → PNG (screenshot)
+headless_chrome = "1.0"
+
+# Stage 3: PNG → Terminal (image decoding)
+image = "0.25"
+
+# CLI
 clap = { version = "4.4", features = ["derive"] }
-atty = "0.2"
-lazy_static = "1.4"
-regex = "1.9"
-dialoguer = "0.10"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# URL encoding for data URIs
+urlencoding = "2.1"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# FFI bindings to libchafa
+chafa-sys = { path = "chafa-sys" }
+
+# FFI support
+libc = "0.2"
+
+tempfile = "3"  # used when delegating exotic formats to the external chafa CLI
+
+[build-dependencies]
+bindgen = "0.69"
+pkg-config = "0.3"
+
+[features]
+default = []

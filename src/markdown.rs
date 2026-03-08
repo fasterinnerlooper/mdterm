@@ -1,146 +1,261 @@
-use crate::font::FontRenderer;
-use crate::image::ImageProcessor;
-use crate::terminal::TerminalRenderer;
-use std::collections::HashMap;
+//! Stage 1: Markdown Rendering
+//! 
+//! Converts Markdown text to styled HTML using comrak (GitHub's parser).
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ElementType {
-    Heading(u8),
-    Paragraph,
-    CodeBlock,
-    Image,
-    Text,
-    Blockquote,
-    List,
-    ListItem,
+use comrak::{markdown_to_html, Options};
+
+/// Theme for HTML rendering
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Theme {
+    Light,
+    Dark,
 }
 
-#[derive(Debug)]
-pub struct MarkdownElement {
-    pub element_type: ElementType,
-    pub content: String,
-    pub children: Vec<MarkdownElement>,
-    pub attributes: HashMap<String, String>,
-}
-
-pub fn process_markdown(content: &str, width: usize) -> String {
-    // Parse markdown into elements
-    let elements = parse_markdown(content);
-
-    // Render elements to terminal
-    let mut renderer = TerminalRenderer::new(width);
-    let mut image_processor = ImageProcessor::new();
-
-    // Load embedded font for pixel rendering
-    let font_data = include_bytes!("../assets/DejaVuSans.ttf");
-    let mut font_renderer = FontRenderer::new(font_data);
-
-    let mut result = String::new();
-
-    for element in elements {
-        match element.element_type {
-            ElementType::Heading(level) => {
-                let heading_text = format!("{} {}", "#".repeat(level as usize), element.content);
-                result.push_str(&renderer.render_text(&heading_text, &mut font_renderer));
-            }
-            ElementType::Paragraph => {
-                result.push_str(&renderer.render_text(&element.content, &mut font_renderer));
-            }
-            ElementType::CodeBlock => {
-                result.push_str(&renderer.render_code_block(&element.content, &mut font_renderer));
-            }
-            ElementType::Image => {
-                if let Some(src) = element.attributes.get("src") {
-                    // Process image with graphics protocols
-                    let image_output = image_processor.process_image(src);
-                    result.push_str(&image_output);
-                }
-            }
-            ElementType::Text => {
-                result.push_str(&renderer.render_text(&element.content, &mut font_renderer));
-            }
-            ElementType::Blockquote => {
-                result.push_str(&renderer.render_blockquote(&element.content, &mut font_renderer));
-            }
-            ElementType::List => {
-                result.push_str(&renderer.render_list(&element.children, &mut font_renderer));
-            }
-            ElementType::ListItem => {
-                result.push_str(&renderer.render_list_item(&element.content, &mut font_renderer));
-            }
+impl Theme {
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "dark" => Theme::Dark,
+            _ => Theme::Light,
         }
-        result.push('\n');
     }
-
-    result
 }
 
-fn parse_markdown(content: &str) -> Vec<MarkdownElement> {
-    // Simple markdown parser for demonstration
-    let mut elements = Vec::new();
-    let mut current_content = String::new();
-    let mut current_type = ElementType::Paragraph;
+/// Convert Markdown to a complete HTML document with embedded CSS styling
+pub fn markdown_to_styled_html(markdown: &str, theme: Theme) -> String {
+    // Parse markdown to HTML using comrak
+    // Use default options - GFM is enabled by default in newer versions
+    let options = Options::default();
+    
+    let html_fragment = markdown_to_html(markdown, &options);
+    
+    // Wrap in complete HTML document with CSS
+    wrap_in_html_template(&html_fragment, theme)
+}
 
-    let flush = |elements: &mut Vec<MarkdownElement>, content: &mut String, etype: &ElementType| {
-        if !content.is_empty() {
-            elements.push(MarkdownElement {
-                element_type: etype.clone(),
-                content: content.clone(),
-                children: Vec::new(),
-                attributes: HashMap::new(),
-            });
-            content.clear();
-        }
+/// Wrap HTML fragment in a complete document with embedded CSS
+fn wrap_in_html_template(html_fragment: &str, theme: Theme) -> String {
+    let css = match theme {
+        Theme::Light => LIGHT_THEME_CSS,
+        Theme::Dark => DARK_THEME_CSS,
     };
+    
+    format!(r#"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+{css}
+    </style>
+</head>
+<body>
+{html_fragment}
+</body>
+</html>"#)
+}
 
-    for line in content.lines() {
-        if line.starts_with("# ") {
-            flush(&mut elements, &mut current_content, &current_type);
-            elements.push(MarkdownElement {
-                element_type: ElementType::Heading(1),
-                content: line[2..].to_string(),
-                children: Vec::new(),
-                attributes: HashMap::new(),
-            });
-            current_type = ElementType::Paragraph;
-        } else if line.starts_with("## ") {
-            flush(&mut elements, &mut current_content, &current_type);
-            elements.push(MarkdownElement {
-                element_type: ElementType::Heading(2),
-                content: line[3..].to_string(),
-                children: Vec::new(),
-                attributes: HashMap::new(),
-            });
-            current_type = ElementType::Paragraph;
-        } else if line.starts_with("![](") && line.ends_with(')') {
-            flush(&mut elements, &mut current_content, &current_type);
-            let src = line[4..line.len() - 1].to_string();
-            elements.push(MarkdownElement {
-                element_type: ElementType::Image,
-                content: String::new(),
-                children: Vec::new(),
-                attributes: vec![("src".to_string(), src)].into_iter().collect(),
-            });
-            current_type = ElementType::Paragraph;
-        } else if line.trim().is_empty() {
-            flush(&mut elements, &mut current_content, &current_type);
-            current_type = ElementType::Paragraph;
-        } else {
-            if current_type == ElementType::Paragraph {
-                if !current_content.is_empty() {
-                    current_content.push('\n');
-                }
-                current_content.push_str(line);
-            } else {
-                flush(&mut elements, &mut current_content, &current_type);
-                current_content.push_str(line);
-                current_type = ElementType::Paragraph;
-            }
-        }
+/// Light theme CSS - GitHub-inspired styling
+const LIGHT_THEME_CSS: &str = r#"
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #1f2328;
+    background-color: #ffffff;
+    padding: 24px;
+    margin: 0;
+    max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+h1 { font-size: 2em; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+h2 { font-size: 1.5em; border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1em; }
+h5 { font-size: 0.875em; }
+h6 { font-size: 0.85em; color: #656d76; }
+p { margin-top: 0; margin-bottom: 16px; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 85%;
+    padding: 0.2em 0.4em;
+    background-color: rgba(175, 184, 193, 0.2);
+    border-radius: 6px;
+}
+pre {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 85%;
+    padding: 16px;
+    overflow: auto;
+    line-height: 1.45;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+}
+pre code {
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+}
+blockquote {
+    margin: 0;
+    padding: 0 1em;
+    color: #656d76;
+    border-left: 0.25em solid #d0d7de;
+}
+ul, ol {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-left: 2em;
+}
+li { margin-top: 0.25em; }
+li + li { margin-top: 0.25em; }
+table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    width: 100%;
+}
+table th, table td {
+    padding: 6px 13px;
+    border: 1px solid #d0d7de;
+}
+table th { font-weight: 600; background-color: #f6f8fa; }
+table tr:nth-child(2n) { background-color: #f6f8fa; }
+hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #d0d7de;
+    border: 0;
+}
+input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+img {
+    max-width: 100%;
+    height: auto;
+}
+"#;
+
+/// Dark theme CSS
+const DARK_THEME_CSS: &str = r#"
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #e6edf3;
+    background-color: #0d1117;
+    padding: 24px;
+    margin: 0;
+    max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #e6edf3;
+}
+h1 { font-size: 2em; border-bottom: 1px solid #30363d; padding-bottom: 0.3em; }
+h2 { font-size: 1.5em; border-bottom: 1px solid #30363d; padding-bottom: 0.3em; }
+h3 { font-size: 1.25em; }
+h4 { font-size: 1em; }
+h5 { font-size: 0.875em; }
+h6 { font-size: 0.85em; color: #8b949e; }
+p { margin-top: 0; margin-bottom: 16px; }
+a { color: #58a6ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 85%;
+    padding: 0.2em 0.4em;
+    background-color: rgba(110, 118, 129, 0.4);
+    border-radius: 6px;
+    color: #e6edf3;
+}
+pre {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 85%;
+    padding: 16px;
+    overflow: auto;
+    line-height: 1.45;
+    background-color: #161b22;
+    border-radius: 6px;
+}
+pre code {
+    padding: 0;
+    background-color: transparent;
+    border-radius: 0;
+}
+blockquote {
+    margin: 0;
+    padding: 0 1em;
+    color: #8b949e;
+    border-left: 0.25em solid #30363d;
+}
+ul, ol {
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-left: 2em;
+}
+li { margin-top: 0.25em; }
+li + li { margin-top: 0.25em; }
+table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    width: 100%;
+}
+table th, table td {
+    padding: 6px 13px;
+    border: 1px solid #30363d;
+}
+table th { font-weight: 600; background-color: #161b22; }
+table tr:nth-child(2n) { background-color: #161b22; }
+hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #30363d;
+    border: 0;
+}
+input[type="checkbox"] {
+    margin-right: 0.5em;
+}
+img {
+    max-width: 100%;
+    height: auto;
+}
+"#;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_light_theme_output() {
+        let md = "# Hello\n\nThis is **bold** and *italic*.";
+        let html = markdown_to_styled_html(md, Theme::Light);
+        assert!(html.contains("<h1>"));
+        assert!(html.contains("font-weight: 600"));
     }
-
-    // Push the last element if it's not empty
-    flush(&mut elements, &mut current_content, &current_type);
-
-    elements
+    
+    #[test]
+    fn test_dark_theme_output() {
+        let md = "# Hello";
+        let html = markdown_to_styled_html(md, Theme::Dark);
+        assert!(html.contains("background-color: #0d1117"));
+    }
 }

@@ -3,7 +3,7 @@
 A three-stage pipeline that converts Markdown files to terminal art using established libraries:
 
 1. **Stage 1 (Markdown → HTML):** Uses [`comrak`](https://crates.io/crates/comrak) - the same GitHub-flavored Markdown parser used by GitHub
-2. **Stage 2 (HTML → PNG):** Uses [`headless_chrome`](https://crates.io/crates/headless_chrome) to render HTML via Chrome DevTools Protocol
+1. **Stage 2 (HTML → PNG):** Uses [`headless_chrome`](https://crates.io/crates/headless_chrome) to render HTML via Chrome DevTools Protocol and take a PNG screenshot of the page
 3. **Stage 3 (PNG → Terminal):** Uses [`libchafa`](https://hpjansson.org/chafa/) via FFI for high-quality terminal art
 
 ## Features
@@ -17,7 +17,8 @@ A three-stage pipeline that converts Markdown files to terminal art using establ
 
 ### All Platforms
 - [Rust toolchain](https://rustup.rs/) (1.70+)
-- Chrome, Chromium, or Microsoft Edge browser installed
+- Chrome, Chromium, or Microsoft Edge browser installed (if missing, mdterm
+  will fall back to printing the intermediate HTML rather than terminal art)
 
 ### Windows
 - [MSYS2](https://www.msys2.org/) with mingw-w64-x86_64-chafa for libchafa:
@@ -85,23 +86,25 @@ cargo run --release -- -v test.md
 | `-w, --width` | Terminal width in columns | 80 |
 | `-H, --height` | Terminal height in rows | 24 |
 | `-t, --theme` | Color theme: light/dark | light |
-| `-f, --format` | Output format: ansi/truecolor/sixel/kitty/iterm2 | ansi |
+| `-f, --format` | Output format: ansi/truecolor/sixel/kitty/iterm2 (ANSI/truecolor use built-in libchafa; other formats delegate to the `chafa` CLI) | ansi |
 | `--no-dither` | Disable dithering | false |
 | `--save-image` | Save intermediate PNG to file | (none) |
 | `-v, --verbose` | Enable verbose logging | false |
 
 ## Current Status
 
-⚠️ **This is a work in progress.** The pipeline works up to Stage 2:
+✅ **Pipeline is now functional** - Markdown is converted all the way to terminal art
 
-- ✅ Stage 1: Markdown → HTML (working with comrak)
-- ✅ Stage 2: HTML → PNG (headless_chrome returns PDF, needs conversion)
-- ⚠️ Stage 3: PNG → Terminal (needs libchafa to be installed)
+- ✅ Stage 1: Markdown → HTML (comrak)
+- ✅ Stage 2: HTML → PNG (headless_chrome screenshot)
+- ✅ Stage 3: PNG → Terminal (libchafa via FFI; ANSI output now honours background colors and respects the `--format` flag)
 
-To complete the pipeline, you need to:
-1. Install libchafa (see platform-specific instructions above)
-2. Uncomment the `chafa-sys` dependency in `Cargo.toml`
-3. Implement the full chafa FFI bindings in `src/chafa.rs`
+You still need to have the external dependencies installed (Chrome/Chromium and
+libchafa) for the stages to run correctly.  If Chrome is missing the program
+will exit with a helpful error.  The libchafa library is used for the built‑in
+ANSI/truecolor rendering; when you request `sixel`, `kitty` or `iterm2` format
+mdterm now shells out to the external `chafa` CLI, so that tool must also be
+available on your PATH for those modes to work.
 
 ## Architecture
 
