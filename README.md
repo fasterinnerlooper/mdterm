@@ -1,94 +1,113 @@
 # mdterm
 
-A markdown terminal viewer that renders markdown files in the terminal with browser-like styling.
+A three-stage pipeline that converts Markdown files to terminal art using established libraries:
+
+1. **Stage 1 (Markdown → HTML):** Uses [`comrak`](https://crates.io/crates/comrak) - the same GitHub-flavored Markdown parser used by GitHub
+2. **Stage 2 (HTML → PNG):** Uses [`headless_chrome`](https://crates.io/crates/headless_chrome) to render HTML via Chrome DevTools Protocol
+3. **Stage 3 (PNG → Terminal):** Uses [`libchafa`](https://hpjansson.org/chafa/) via FFI for high-quality terminal art
 
 ## Features
 
-- **Browser-like styling** - Headings, links, code blocks, blockquotes, and tables rendered with styling similar to web browsers
-- **Syntax highlighting** - Code blocks are highlighted using Pygments
-- **Light and dark themes** - Choose between light and dark color schemes
-- **Flexible input** - Read from file arguments or stdin/pipe
-- **Windows Terminal compatible** - Works properly on Windows Terminal
+- GitHub-flavored Markdown support (tables, code blocks, task lists, etc.)
+- Light and dark themes with GitHub-inspired styling
+- Renders Markdown through a real browser engine for pixel-perfect output
+- Outputs ANSI terminal art using industry-standard libchafa
 
-## Installation
+## Requirements
+
+### All Platforms
+- [Rust toolchain](https://rustup.rs/) (1.70+)
+- Chrome, Chromium, or Microsoft Edge browser installed
+
+### Windows
+- [MSYS2](https://www.msys2.org/) with mingw-w64-x86_64-chafa for libchafa:
+  ```powershell
+  pacman -S mingw-w64-x86_64-chafa
+  ```
+
+### Linux
+- libchafa development files:
+  ```bash
+  # Ubuntu/Debian
+  apt install libchafa-dev
+  
+  # Fedora
+  dnf install chafa-devel
+  
+  # Arch
+  pacman -S chafa
+  ```
+
+### macOS
+- libchafa via Homebrew:
+  ```bash
+  brew install chafa
+  ```
+
+## Building
 
 ```bash
-pip install mdterm
-```
+# Clone and build
+cargo build --release
 
-Or install from source:
-
-```bash
-pip install -e .
+# Or build in debug mode
+cargo build
 ```
 
 ## Usage
 
 ```bash
 # Render a markdown file
-mdterm README.md
-
-# Read from stdin
-cat README.md | mdterm --stdin
+cargo run --release -- test.md
 
 # Use dark theme
-mdterm --theme dark README.md
+cargo run --release -- --theme dark test.md
 
-# Specify terminal width
-mdterm --width 100 README.md
+# Custom terminal dimensions
+cargo run --release -- --width 120 --height 40 test.md
 
-# Disable colors
-mdterm --no-color README.md
+# Read from stdin
+cat test.md | cargo run --release -- --stdin
+
+# Save intermediate PNG for debugging
+cargo run --release -- --save-image output.png test.md
+
+# Verbose output
+cargo run --release -- -v test.md
 ```
 
-## Options
+## CLI Options
 
-- `FILE` - Markdown file to render (optional, use `--stdin` for pipe input)
-- `-s, --stdin` - Read from stdin instead of a file
-- `-w, --width WIDTH` - Terminal width for wrapping (default: auto-detect)
-- `-t, --theme {light,dark}` - Color theme (default: light)
-- `--code-theme THEME` - Code syntax highlighting theme (default: monokai)
-- `--no-color` - Disable color output
+| Option | Description | Default |
+|--------|-------------|---------|
+| `FILE` | Input markdown file | (required or --stdin) |
+| `-s, --stdin` | Read from stdin | false |
+| `-w, --width` | Terminal width in columns | 80 |
+| `-H, --height` | Terminal height in rows | 24 |
+| `-t, --theme` | Color theme: light/dark | light |
+| `-f, --format` | Output format: ansi/truecolor/sixel/kitty/iterm2 | ansi |
+| `--no-dither` | Disable dithering | false |
+| `--save-image` | Save intermediate PNG to file | (none) |
+| `-v, --verbose` | Enable verbose logging | false |
 
-## Examples
+## Current Status
 
-### Headings
+⚠️ **This is a work in progress.** The pipeline works up to Stage 2:
 
-# Heading 1
-## Heading 2
-### Heading 3
+- ✅ Stage 1: Markdown → HTML (working with comrak)
+- ✅ Stage 2: HTML → PNG (headless_chrome returns PDF, needs conversion)
+- ⚠️ Stage 3: PNG → Terminal (needs libchafa to be installed)
 
-Rendered with blue color and underlines.
+To complete the pipeline, you need to:
+1. Install libchafa (see platform-specific instructions above)
+2. Uncomment the `chafa-sys` dependency in `Cargo.toml`
+3. Implement the full chafa FFI bindings in `src/chafa.rs`
 
-### Links
+## Architecture
 
-[Link text](https://example.com)
-
-Rendered in green with URL shown in parentheses.
-
-### Code Blocks
-
-```python
-def hello():
-    print("Hello, World!")
 ```
-
-Syntax highlighted with your chosen theme.
-
-### Blockquotes
-
-> This is a blockquote
-> with multiple lines
-
-Rendered with a border on the left.
-
-### Tables
-
-| Header 1 | Header 2 |
-|----------|----------|
-| Cell 1   | Cell 2   |
-
-Rendered with box-drawing characters.
+Markdown → comrak → HTML+CSS → headless_chrome → PDF → libchafa → ANSI → stdout
+```
 
 ## License
 
