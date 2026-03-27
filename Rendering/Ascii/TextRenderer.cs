@@ -14,6 +14,6 @@ public sealed class TextRenderer : INodeRenderer
     {
         var trimmed = ((IText)node).Text.Trim();
         if (!string.IsNullOrEmpty(trimmed))
-            AnsiConsole.MarkupLine(trimmed);
+            AnsiConsole.MarkupLine(trimmed.EscapeMarkup());
     }
 }

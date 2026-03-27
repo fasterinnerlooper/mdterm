@@ -18,9 +18,14 @@ public sealed class ListRenderer : INodeRenderer
 
         foreach (var li in el.QuerySelectorAll("li"))
         {
-            var prefix = isOrdered ? $"{i}. " : "- ";
-            AnsiConsole.MarkupLine($"{prefix}{li.TextContent}");
+            var text = li.TextContent.EscapeMarkup();
+            if (isOrdered)
+                AnsiConsole.MarkupLine($"  [cyan]{i}[/]. {text}");
+            else
+                AnsiConsole.MarkupLine($"  [cyan]\u2022[/] {text}");
             i++;
         }
+
+        AnsiConsole.WriteLine();
     }
 }

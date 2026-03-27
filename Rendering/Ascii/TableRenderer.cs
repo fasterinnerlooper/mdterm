@@ -13,22 +13,27 @@ public sealed class TableRenderer : INodeRenderer
     public void Render(INode node)
     {
         var el = (IElement)node;
-        var table = new Table();
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey);
 
         var header = el.QuerySelector("thead");
         if (header != null)
         {
             foreach (var th in header.QuerySelectorAll("th"))
-                table.AddColumn(th.TextContent);
+                table.AddColumn($"[bold]{th.TextContent.EscapeMarkup()}[/]");
         }
 
         var rows = el.QuerySelectorAll("tbody tr");
         foreach (var row in rows)
         {
-            var cells = row.QuerySelectorAll("td").Select(td => td.TextContent).ToArray();
+            var cells = row.QuerySelectorAll("td")
+                .Select(td => td.TextContent.EscapeMarkup())
+                .ToArray();
             table.AddRow(cells);
         }
 
         AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
     }
 }

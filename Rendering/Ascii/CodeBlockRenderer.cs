@@ -15,7 +15,9 @@ public sealed class CodeBlockRenderer : INodeRenderer
         var el = (IElement)node;
         var panel = new Panel(el.TextContent)
             .Border(BoxBorder.Rounded)
-            .Header("[bold]Code[/]");
+            .BorderStyle("grey")
+            .Header("[bold white on grey19] Code [/]")
+            .Padding(1, 0);
         AnsiConsole.Write(panel);
     }
 }

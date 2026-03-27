@@ -7,16 +7,51 @@ public sealed class HeadingRenderer : INodeRenderer
 {
     public int Priority => 100;
 
+    private readonly FigletFont _standardFont;
+    private readonly FigletFont _smallFont;
+    private readonly FigletFont _miniFont;
+
+    public HeadingRenderer()
+    {
+        var fontDir = Path.Combine(AppContext.BaseDirectory, "Fonts");
+        _standardFont = FigletFont.Load(Path.Combine(fontDir, "standard.flf"));
+        _smallFont = FigletFont.Load(Path.Combine(fontDir, "small.flf"));
+        _miniFont = FigletFont.Load(Path.Combine(fontDir, "mini.flf"));
+    }
+
     public bool CanRender(INode node)
-        => node is IElement el && el.TagName.StartsWith('H');
+        => node is IElement el && el.TagName.StartsWith('H')
+           && int.TryParse(el.TagName.Substring(1), out _);
 
     public void Render(INode node)
     {
         var el = (IElement)node;
-        var figlet = new FigletText(el.TextContent)
+        var level = int.Parse(el.TagName.Substring(1));
+        var text = el.TextContent.EscapeMarkup();
+
+        switch (level)
         {
-            Color = Color.Cyan
-        };
-        AnsiConsole.Write(figlet);
+            case 1:
+                AnsiConsole.Write(new FigletText(_standardFont, text) { Color = Color.Cyan1 });
+                AnsiConsole.Write(new Rule().RuleStyle("cyan").DoubleBorder());
+                break;
+            case 2:
+                AnsiConsole.WriteLine();
+                AnsiConsole.Write(new FigletText(_smallFont, text) { Color = Color.Cyan1 });
+                break;
+            case 3:
+                AnsiConsole.Write(new FigletText(_miniFont, text) { Color = Color.Cyan1 });
+                break;
+            case 4:
+                AnsiConsole.MarkupLine($"[bold]{text}[/]");
+                AnsiConsole.MarkupLine("[dim]" + new string('\u2500', Math.Min(text.Length, 40)) + "[/]");
+                break;
+            case 5:
+                AnsiConsole.MarkupLine($"[bold]  {text}[/]");
+                break;
+            case 6:
+                AnsiConsole.MarkupLine($"[dim]  {text}[/]");
+                break;
+        }
     }
 }
