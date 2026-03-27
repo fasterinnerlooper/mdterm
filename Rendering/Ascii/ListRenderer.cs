@@ -1,0 +1,26 @@
+using AngleSharp.Dom;
+using Spectre.Console;
+
+namespace MdTerm.Rendering.Ascii;
+
+public sealed class ListRenderer : INodeRenderer
+{
+    public int Priority => 80;
+
+    public bool CanRender(INode node)
+        => node is IElement el && (el.TagName == "UL" || el.TagName == "OL");
+
+    public void Render(INode node)
+    {
+        var el = (IElement)node;
+        var isOrdered = el.TagName == "OL";
+        int i = 1;
+
+        foreach (var li in el.QuerySelectorAll("li"))
+        {
+            var prefix = isOrdered ? $"{i}. " : "- ";
+            AnsiConsole.MarkupLine($"{prefix}{li.TextContent}");
+            i++;
+        }
+    }
+}

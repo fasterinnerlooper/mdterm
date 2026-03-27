@@ -1,21 +1,30 @@
-# Test Markdown File
+# Main Title
 
-This is a **test** of the mdterm pipeline.
+## Subheading One
 
-## Features
+This is a paragraph with **bold** and *italic* text.
 
-- Markdown rendering
-- HTML conversion
-- Terminal output
+### Sub-subheading
 
-```rust
-fn main() {
-    println!("Hello, world!");
-}
+- Item 1
+- Item 2
+  - Nested item
+
+## Code Example
+
+```python
+def hello():
+    print("Hello, world!")
 ```
 
-> This is a blockquote
+## Table
 
-| Column 1 | Column 2 |
-|----------|----------|
-| Cell 1   | Cell 2   |
+| Feature      | ASCII | Pixel |
+|-------------|-------|-------|
+| Headings    | Figlet| True  |
+| Colors      | ANSI  | True  |
+| Portability | High  | Low   |
+
+## Another Heading
+
+> This is a blockquote with some text.
