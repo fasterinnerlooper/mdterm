@@ -1,0 +1,29 @@
+name: mdterm
+base: core22
+version: VERSION_PLACEHOLDER
+summary: Render Markdown files beautifully in the terminal
+description: |
+  MdTerm renders Markdown files as formatted, styled output directly
+  in your terminal. Supports headings, code blocks, tables, lists,
+  and multiple ASCII art styles.
+
+grade: stable
+confinement: strict
+
+apps:
+  mdterm:
+    command: bin/mdterm
+    plugs:
+      - home
+      - removable-media
+
+parts:
+  mdterm:
+    plugin: dump
+    source: https://github.com/fasterinnerlooper/mdterm/releases/download/vVERSION_PLACEHOLDER/mdterm-linux-x64.tar.gz
+    source-type: tar
+    organize:
+      mdterm-linux-x64/mdterm: bin/mdterm
+    override-build: |
+      craftctl default
+      chmod +x $CRAFT_PART_INSTALL/bin/mdterm

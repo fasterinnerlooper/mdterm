@@ -1,0 +1,15 @@
+# Maintainer: fasterinnerlooper
+pkgname=mdterm
+pkgver=VERSION_PLACEHOLDER
+pkgrel=1
+pkgdesc="Render Markdown files beautifully in the terminal"
+arch=('x86_64')
+url="https://github.com/fasterinnerlooper/mdterm"
+license=('MIT')
+depends=('glibc')
+source=("https://github.com/fasterinnerlooper/mdterm/releases/download/v${pkgver}/mdterm-linux-x64.tar.gz")
+sha256sums=('SHA256_PLACEHOLDER')
+
+package() {
+    install -Dm755 "$srcdir/mdterm-linux-x64/mdterm" "$pkgdir/usr/bin/mdterm"
+}

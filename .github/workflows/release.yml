@@ -72,3 +72,163 @@ jobs:
         with:
           generate_release_notes: true
           files: mdterm-*
+
+  publish-packages:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Package artifacts
+        run: |
+          cd artifacts
+          [ -d mdterm-win-x64 ] && zip -r ../mdterm-win-x64.zip mdterm-win-x64/
+          [ -d mdterm-linux-x64 ] && tar czf ../mdterm-linux-x64.tar.gz mdterm-linux-x64/
+          [ -d mdterm-osx-x64 ] && tar czf ../mdterm-osx-x64.tar.gz mdterm-osx-x64/
+          [ -d mdterm-osx-arm64 ] && tar czf ../mdterm-osx-arm64.tar.gz mdterm-osx-arm64/
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute SHA256 hashes
+        id: hashes
+        run: |
+          echo "win_x64=$(sha256sum mdterm-win-x64.zip | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "linux_x64=$(sha256sum mdterm-linux-x64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "osx_x64=$(sha256sum mdterm-osx-x64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "osx_arm64=$(sha256sum mdterm-osx-arm64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Render packaging templates
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          render() {
+            sed \
+              -e "s/VERSION_PLACEHOLDER/${VERSION}/g" \
+              -e "s/SHA256_PLACEHOLDER/${{ steps.hashes.outputs.win_x64 }}/g" \
+              -e "s/SHA256_ARM64_PLACEHOLDER/${{ steps.hashes.outputs.osx_arm64 }}/g" \
+              -e "s/SHA256_X64_PLACEHOLDER/${{ steps.hashes.outputs.osx_x64 }}/g" \
+              -e "s/SHA256_LINUX_PLACEHOLDER/${{ steps.hashes.outputs.linux_x64 }}/g" \
+              "$1"
+          }
+
+          # Winget
+          mkdir -p rendered/winget
+          for f in packaging/winget/*; do
+            render "$f" > "rendered/winget/$(basename "$f")"
+          done
+
+          # Scoop
+          mkdir -p rendered/scoop
+          render packaging/scoop/mdterm.json > rendered/scoop/mdterm.json
+
+          # Chocolatey
+          mkdir -p rendered/chocolatey/tools
+          render packaging/chocolatey/mdterm.nuspec > rendered/chocolatey/mdterm.nuspec
+          render packaging/chocolatey/tools/chocolateyInstall.ps1 > rendered/chocolatey/tools/chocolateyInstall.ps1
+
+          # Homebrew
+          mkdir -p rendered/homebrew
+          render packaging/homebrew/mdterm.rb > rendered/homebrew/mdterm.rb
+
+          # AUR
+          mkdir -p rendered/aur
+          render packaging/aur/PKGBUILD > rendered/aur/PKGBUILD
+          render packaging/aur/.SRCINFO > rendered/aur/.SRCINFO
+
+      - name: Commit rendered packaging
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp -r rendered/* packaging/
+          git add packaging/
+          git diff --cached --quiet || git commit -m "chore: update packaging for v${{ steps.version.outputs.version }}"
+          git push
+
+      # ── Winget ──────────────────────────────────────────────
+      - name: Publish to Winget
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: fasterinnerlooper.mdterm
+          installers-regex: '\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}
+        continue-on-error: true
+
+      # ── Scoop ───────────────────────────────────────────────
+      - name: Publish to Scoop bucket
+        if: ${{ secrets.SCOOP_BUCKET_TOKEN != '' }}
+        run: |
+          git clone "https://x-access-token:${{ secrets.SCOOP_BUCKET_TOKEN }}@github.com/fasterinnerlooper/scoop-bucket.git" scoop-bucket
+          cp rendered/scoop/mdterm.json scoop-bucket/bucket/
+          cd scoop-bucket
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bucket/mdterm.json
+          git commit -m "mdterm: update to v${{ steps.version.outputs.version }}"
+          git push
+        continue-on-error: true
+
+      # ── Chocolatey ──────────────────────────────────────────
+      - name: Publish to Chocolatey
+        if: ${{ secrets.CHOCOLATEY_API_KEY != '' }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y mono-devel nuget
+          nuget pack rendered/chocolatey/mdterm.nuspec -OutputDirectory rendered/chocolatey
+          nuget push rendered/chocolatey/mdterm.*.nupkg \
+            -Source "https://push.chocolatey.org/" \
+            -ApiKey "${{ secrets.CHOCOLATEY_API_KEY }}"
+        continue-on-error: true
+
+      # ── Homebrew ────────────────────────────────────────────
+      - name: Publish to Homebrew tap
+        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        run: |
+          git clone "https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/fasterinnerlooper/homebrew-tap.git" homebrew-tap
+          cp rendered/homebrew/mdterm.rb homebrew-tap/Formula/
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/mdterm.rb
+          git commit -m "mdterm: update to v${{ steps.version.outputs.version }}"
+          git push
+        continue-on-error: true
+
+      # ── Snap Store ──────────────────────────────────────────
+      - name: Prepare Snap build
+        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        run: mkdir -p snap && cp packaging/snap/snapcraft.yaml snap/snapcraft.yaml
+      - name: Build Snap package
+        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        id: snap_build
+        uses: snapcore/action-build@v1
+      - name: Publish to Snap Store
+        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        uses: snapcore/action-publish@v1
+        with:
+          store: stable
+          snap: ${{ steps.snap_build.outputs.snap }}
+          release: stable
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        continue-on-error: true
+
+      # ── AUR ─────────────────────────────────────────────────
+      - name: Publish to AUR
+        if: ${{ secrets.AUR_SSH_PRIVATE_KEY != '' }}
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: mdterm
+          pkgbuild: ./rendered/aur/PKGBUILD
+          srcinfo: ./rendered/aur/.SRCINFO
+          commit_username: "mdterm-bot"
+          commit_email: "bot@mdterm.dev"
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to v${{ steps.version.outputs.version }}"
+        continue-on-error: true
