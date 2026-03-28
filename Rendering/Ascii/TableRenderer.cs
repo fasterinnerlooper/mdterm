@@ -21,7 +21,10 @@ public sealed class TableRenderer : INodeRenderer
         if (header != null)
         {
             foreach (var th in header.QuerySelectorAll("th"))
-                table.AddColumn($"[bold]{th.TextContent.EscapeMarkup()}[/]");
+            {
+                table.AddColumn(new TableColumn(
+                    new Markup($"[bold white on grey19] {th.TextContent.EscapeMarkup()} [/]")));
+            }
         }
 
         var rows = el.QuerySelectorAll("tbody tr");

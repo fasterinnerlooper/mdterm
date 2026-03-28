@@ -9,6 +9,7 @@ public sealed class HtmlMarkdownParser : IMarkdownParser
 {
     private readonly MarkdownPipeline _pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .UseEmojiAndSmiley()
         .Build();
 
     public async Task<ParsedDocument> ParseAsync(string markdown)

@@ -22,7 +22,7 @@ public sealed class ListRenderer : INodeRenderer
             if (isOrdered)
                 AnsiConsole.MarkupLine($"  [cyan]{i}[/]. {text}");
             else
-                AnsiConsole.MarkupLine($"  [cyan]\u2022[/] {text}");
+                AnsiConsole.MarkupLine($"  [cyan]*[/] {text}");
             i++;
         }
 
