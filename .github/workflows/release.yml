@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -19,7 +20,7 @@ jobs:
           - os: ubuntu-latest
             runtime: linux-x64
             artifact: mdterm-linux-x64
-          - os: macos-13
+          - os: macos-15
             runtime: osx-x64
             artifact: mdterm-osx-x64
           - os: macos-latest
@@ -37,7 +38,7 @@ jobs:
           dotnet-version: "9.0.x"
 
       - name: Publish
-        run: dotnet publish -c Release -r ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -o ./publish
+        run: dotnet publish MdTerm.csproj -c Release -r ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -o ./publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -47,6 +48,7 @@ jobs:
 
   release:
     needs: build
+    if: always()
     runs-on: ubuntu-latest
 
     steps:
@@ -60,17 +62,13 @@ jobs:
       - name: Package artifacts
         run: |
           cd artifacts
-          zip -r ../mdterm-win-x64.zip mdterm-win-x64/
-          tar czf ../mdterm-linux-x64.tar.gz mdterm-linux-x64/
-          tar czf ../mdterm-osx-x64.tar.gz mdterm-osx-x64/
-          tar czf ../mdterm-osx-arm64.tar.gz mdterm-osx-arm64/
+          [ -d mdterm-win-x64 ] && zip -r ../mdterm-win-x64.zip mdterm-win-x64/
+          [ -d mdterm-linux-x64 ] && tar czf ../mdterm-linux-x64.tar.gz mdterm-linux-x64/
+          [ -d mdterm-osx-x64 ] && tar czf ../mdterm-osx-x64.tar.gz mdterm-osx-x64/
+          [ -d mdterm-osx-arm64 ] && tar czf ../mdterm-osx-arm64.tar.gz mdterm-osx-arm64/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: |
-            mdterm-win-x64.zip
-            mdterm-linux-x64.tar.gz
-            mdterm-osx-x64.tar.gz
-            mdterm-osx-arm64.tar.gz
+          files: mdterm-*
