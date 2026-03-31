@@ -76,6 +76,12 @@ jobs:
   publish-packages:
     needs: release
     runs-on: ubuntu-latest
+    env:
+      SCOOP_BUCKET_TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+      CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -163,9 +169,9 @@ jobs:
 
       # ── Scoop ───────────────────────────────────────────────
       - name: Publish to Scoop bucket
-        if: ${{ secrets.SCOOP_BUCKET_TOKEN != '' }}
+        if: env.SCOOP_BUCKET_TOKEN != ''
         run: |
-          git clone "https://x-access-token:${{ secrets.SCOOP_BUCKET_TOKEN }}@github.com/fasterinnerlooper/scoop-bucket.git" scoop-bucket
+          git clone "https://x-access-token:$SCOOP_BUCKET_TOKEN@github.com/fasterinnerlooper/scoop-bucket.git" scoop-bucket
           cp rendered/scoop/mdterm.json scoop-bucket/bucket/
           cd scoop-bucket
           git config user.name "github-actions[bot]"
@@ -177,20 +183,20 @@ jobs:
 
       # ── Chocolatey ──────────────────────────────────────────
       - name: Publish to Chocolatey
-        if: ${{ secrets.CHOCOLATEY_API_KEY != '' }}
+        if: env.CHOCOLATEY_API_KEY != ''
         run: |
           sudo apt-get update && sudo apt-get install -y mono-devel nuget
           nuget pack rendered/chocolatey/mdterm.nuspec -OutputDirectory rendered/chocolatey
           nuget push rendered/chocolatey/mdterm.*.nupkg \
             -Source "https://push.chocolatey.org/" \
-            -ApiKey "${{ secrets.CHOCOLATEY_API_KEY }}"
+            -ApiKey "$CHOCOLATEY_API_KEY"
         continue-on-error: true
 
       # ── Homebrew ────────────────────────────────────────────
       - name: Publish to Homebrew tap
-        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        if: env.HOMEBREW_TAP_TOKEN != ''
         run: |
-          git clone "https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/fasterinnerlooper/homebrew-tap.git" homebrew-tap
+          git clone "https://x-access-token:$HOMEBREW_TAP_TOKEN@github.com/fasterinnerlooper/homebrew-tap.git" homebrew-tap
           cp rendered/homebrew/mdterm.rb homebrew-tap/Formula/
           cd homebrew-tap
           git config user.name "github-actions[bot]"
@@ -202,14 +208,14 @@ jobs:
 
       # ── Snap Store ──────────────────────────────────────────
       - name: Prepare Snap build
-        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         run: mkdir -p snap && cp packaging/snap/snapcraft.yaml snap/snapcraft.yaml
       - name: Build Snap package
-        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         id: snap_build
         uses: snapcore/action-build@v1
       - name: Publish to Snap Store
-        if: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+        if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         uses: snapcore/action-publish@v1
         with:
           store: stable
@@ -221,7 +227,7 @@ jobs:
 
       # ── AUR ─────────────────────────────────────────────────
       - name: Publish to AUR
-        if: ${{ secrets.AUR_SSH_PRIVATE_KEY != '' }}
+        if: env.AUR_SSH_PRIVATE_KEY != ''
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: mdterm
