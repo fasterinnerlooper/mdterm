@@ -1,12 +1,12 @@
 {
-  "version": "VERSION_PLACEHOLDER",
+  "version": "1.1.5",
   "description": "Render Markdown files beautifully in the terminal",
   "homepage": "https://github.com/fasterinnerlooper/mdterm",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/fasterinnerlooper/mdterm/releases/download/vVERSION_PLACEHOLDER/mdterm-win-x64.zip",
-      "hash": "SHA256_PLACEHOLDER",
+      "url": "https://github.com/fasterinnerlooper/mdterm/releases/download/v1.1.5/mdterm-win-x64.zip",
+      "hash": "3b6629e46dff3a37c80c2096c2014248984e6a0d2e4acaed8f06f52180b04011",
       "extract_dir": "mdterm-win-x64"
     }
   },

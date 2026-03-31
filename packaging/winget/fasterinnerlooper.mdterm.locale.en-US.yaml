@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
 PackageIdentifier: fasterinnerlooper.mdterm
-PackageVersion: VERSION_PLACEHOLDER
+PackageVersion: 1.1.5
 PackageLocale: en-US
 Publisher: fasterinnerlooper
 PublisherUrl: https://github.com/fasterinnerlooper
@@ -15,6 +15,6 @@ Tags:
   - cli
   - renderer
   - tui
-ReleaseNotesUrl: https://github.com/fasterinnerlooper/mdterm/releases/tag/vVERSION_PLACEHOLDER
+ReleaseNotesUrl: https://github.com/fasterinnerlooper/mdterm/releases/tag/v1.1.5
 ManifestType: defaultLocale
 ManifestVersion: 1.9.0

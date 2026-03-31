@@ -1,8 +1,8 @@
 $ErrorActionPreference = 'Stop'
 
 $packageName = 'mdterm'
-$url64 = 'https://github.com/fasterinnerlooper/mdterm/releases/download/vVERSION_PLACEHOLDER/mdterm-win-x64.zip'
-$checksum64 = 'SHA256_PLACEHOLDER'
+$url64 = 'https://github.com/fasterinnerlooper/mdterm/releases/download/v1.1.5/mdterm-win-x64.zip'
+$checksum64 = '3b6629e46dff3a37c80c2096c2014248984e6a0d2e4acaed8f06f52180b04011'
 
 $packageArgs = @{
     packageName    = $packageName
