@@ -156,7 +156,7 @@ jobs:
           cp -r rendered/* packaging/
           git add packaging/
           git diff --cached --quiet || git commit -m "chore: update packaging for v${{ steps.version.outputs.version }}"
-          git push
+          git push origin HEAD:main
 
       # ── Winget ──────────────────────────────────────────────
       - name: Publish to Winget
