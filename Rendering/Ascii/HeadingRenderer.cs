@@ -1,3 +1,4 @@
+using System.Reflection;
 using AngleSharp.Dom;
 using Spectre.Console;
 
@@ -13,10 +14,10 @@ public sealed class HeadingRenderer : INodeRenderer
 
     public HeadingRenderer()
     {
-        var fontDir = Path.Combine(AppContext.BaseDirectory, "Fonts");
-        _standardFont = FigletFont.Load(Path.Combine(fontDir, "standard.flf"));
-        _smallFont = FigletFont.Load(Path.Combine(fontDir, "small.flf"));
-        _miniFont = FigletFont.Load(Path.Combine(fontDir, "mini.flf"));
+        var asm = Assembly.GetExecutingAssembly();
+        _standardFont = FigletFont.Load(asm.GetManifestResourceStream("MdTerm.Fonts.standard.flf")!);
+        _smallFont = FigletFont.Load(asm.GetManifestResourceStream("MdTerm.Fonts.small.flf")!);
+        _miniFont = FigletFont.Load(asm.GetManifestResourceStream("MdTerm.Fonts.mini.flf")!);
     }
 
     public bool CanRender(INode node)
