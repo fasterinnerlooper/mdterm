@@ -37,6 +37,9 @@ jobs:
       - name: Build
         run: dotnet build MdTerm.csproj -c Release -r ${{ matrix.runtime }}
 
+      - name: Test
+        run: dotnet test -c Release --no-build
+
   tag:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -56,15 +59,31 @@ jobs:
           if [ -z "$LATEST_TAG" ]; then
             NEXT="v0.1.0"
           else
+            COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"%s%n%b")
+
+            BUMP="patch"
+            if echo "$COMMITS" | grep -qiE 'BREAKING CHANGE:|^[a-z]+(\(.+\))?!:'; then
+              BUMP="major"
+            elif echo "$COMMITS" | grep -qE '^feat(\(.+\))?:'; then
+              BUMP="minor"
+            fi
+
             VERSION=${LATEST_TAG#v}
             MAJOR=$(echo "$VERSION" | cut -d. -f1)
             MINOR=$(echo "$VERSION" | cut -d. -f2)
             PATCH=$(echo "$VERSION" | cut -d. -f3)
-            NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+
+            case "$BUMP" in
+              major) NEXT="v$((MAJOR + 1)).0.0" ;;
+              minor) NEXT="v${MAJOR}.$((MINOR + 1)).0" ;;
+              patch) NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+            esac
           fi
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
 
       - name: Create and push tag
         run: |
+          echo "Creating ${{ steps.version.outputs.next }} (${{ steps.version.outputs.bump }} bump)"
           git tag "${{ steps.version.outputs.next }}"
           git push origin "${{ steps.version.outputs.next }}"
