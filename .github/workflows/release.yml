@@ -66,11 +66,10 @@ jobs:
 
       - name: Package artifacts
         run: |
-          cd artifacts
-          [ -d mdterm-win-x64 ] && zip -r ../mdterm-win-x64.zip mdterm-win-x64/
-          [ -d mdterm-linux-x64 ] && tar czf ../mdterm-linux-x64.tar.gz mdterm-linux-x64/
-          [ -d mdterm-osx-x64 ] && tar czf ../mdterm-osx-x64.tar.gz mdterm-osx-x64/
-          [ -d mdterm-osx-arm64 ] && tar czf ../mdterm-osx-arm64.tar.gz mdterm-osx-arm64/
+          [ -d artifacts/mdterm-win-x64 ] && (cd artifacts/mdterm-win-x64 && zip -r ../../mdterm-win-x64.zip .)
+          [ -d artifacts/mdterm-linux-x64 ] && tar czf mdterm-linux-x64.tar.gz -C artifacts/mdterm-linux-x64 .
+          [ -d artifacts/mdterm-osx-x64 ] && tar czf mdterm-osx-x64.tar.gz -C artifacts/mdterm-osx-x64 .
+          [ -d artifacts/mdterm-osx-arm64 ] && tar czf mdterm-osx-arm64.tar.gz -C artifacts/mdterm-osx-arm64 .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
@@ -100,11 +99,10 @@ jobs:
 
       - name: Package artifacts
         run: |
-          cd artifacts
-          [ -d mdterm-win-x64 ] && zip -r ../mdterm-win-x64.zip mdterm-win-x64/
-          [ -d mdterm-linux-x64 ] && tar czf ../mdterm-linux-x64.tar.gz mdterm-linux-x64/
-          [ -d mdterm-osx-x64 ] && tar czf ../mdterm-osx-x64.tar.gz mdterm-osx-x64/
-          [ -d mdterm-osx-arm64 ] && tar czf ../mdterm-osx-arm64.tar.gz mdterm-osx-arm64/
+          [ -d artifacts/mdterm-win-x64 ] && (cd artifacts/mdterm-win-x64 && zip -r ../../mdterm-win-x64.zip .)
+          [ -d artifacts/mdterm-linux-x64 ] && tar czf mdterm-linux-x64.tar.gz -C artifacts/mdterm-linux-x64 .
+          [ -d artifacts/mdterm-osx-x64 ] && tar czf mdterm-osx-x64.tar.gz -C artifacts/mdterm-osx-x64 .
+          [ -d artifacts/mdterm-osx-arm64 ] && tar czf mdterm-osx-arm64.tar.gz -C artifacts/mdterm-osx-arm64 .
 
       - name: Extract version
         id: version
