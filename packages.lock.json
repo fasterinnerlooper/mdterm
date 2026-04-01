@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net9.0": {
+      "AngleSharp": {
+        "type": "Direct",
+        "requested": "[1.4.0, )",
+        "resolved": "1.4.0",
+        "contentHash": "6ph8mpaQx0KL0COYRt0kI8MB9gSp1PtKijKMhJU//+aVFgKAJLKDesG/+26JSaVCOrHNgPf12wpfoyRcMYOeXg=="
+      },
+      "Markdig": {
+        "type": "Direct",
+        "requested": "[1.1.1, )",
+        "resolved": "1.1.1",
+        "contentHash": "wACpji8aLjtmghzdancNFRDUH66F2kS8QE0uywUXvLHgfbTD7LPNj7Vx43sTckpEQFtn5YndEoZvGqIHosBzGQ=="
+      },
+      "Spectre.Console": {
+        "type": "Direct",
+        "requested": "[0.54.0, )",
+        "resolved": "0.54.0",
+        "contentHash": "StDXCFayfy0yB1xzUHT2tgEpV1/HFTiS4JgsAQS49EYTfMixSwwucaQs/bIOCwXjWwIQTMuxjUIxcB5XsJkFJA=="
+      }
+    }
+  }
+}

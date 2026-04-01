@@ -40,6 +40,9 @@ jobs:
       - name: Publish
         run: dotnet publish MdTerm.csproj -c Release -r ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -o ./publish
 
+      - name: Install CycloneDX tool
+        run: dotnet tool install --global CycloneDX --version 5.4.0
+
       - name: Generate SBOM
         run: dotnet CycloneDX MdTerm.csproj -o ./publish --filename-prefix sbom-
 
