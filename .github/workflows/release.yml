@@ -221,7 +221,7 @@ jobs:
       - name: Build Snap package
         if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         id: snap_build
-        uses: snapcore/action-build@b391f430cb2650fd359ed4d2cfe88b2c481800e0 # v1
+        uses: snapcore/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1
       - name: Publish to Snap Store
         if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
         uses: snapcore/action-publish@9334eecb267cfd97a0ce3c8654215d095927252f # v1
