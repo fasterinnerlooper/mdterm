@@ -130,6 +130,9 @@ jobs:
           echo "osx_x64=$(sha256sum mdterm-osx-x64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
           echo "osx_arm64=$(sha256sum mdterm-osx-arm64.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
+          curl -sL "https://github.com/fasterinnerlooper/mdterm/archive/refs/tags/v${{ steps.version.outputs.version }}.tar.gz" | sha256 | awk '{print $1}' | tr -d '\n' > source_hash.txt
+          echo "source=$(cat source_hash.txt)" >> "$GITHUB_OUTPUT"
+
       - name: Render packaging templates
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -137,7 +140,7 @@ jobs:
           render() {
             sed \
               -e "s/VERSION_PLACEHOLDER/${VERSION}/g" \
-              -e "s/SHA256_PLACEHOLDER/${{ steps.hashes.outputs.win_x64 }}/g" \
+              -e "s/SHA256_PLACEHOLDER/${{ steps.hashes.outputs.source }}/g" \
               -e "s/SHA256_ARM64_PLACEHOLDER/${{ steps.hashes.outputs.osx_arm64 }}/g" \
               -e "s/SHA256_X64_PLACEHOLDER/${{ steps.hashes.outputs.osx_x64 }}/g" \
               -e "s/SHA256_LINUX_PLACEHOLDER/${{ steps.hashes.outputs.linux_x64 }}/g" \
@@ -191,6 +194,7 @@ jobs:
         if: env.SCOOP_BUCKET_TOKEN != ''
         run: |
           git clone "https://x-access-token:$SCOOP_BUCKET_TOKEN@github.com/fasterinnerlooper/scoop-bucket.git" scoop-bucket
+          mkdir -p scoop-bucket/bucket
           cp rendered/scoop/mdterm.json scoop-bucket/bucket/
           cd scoop-bucket
           git config user.name "github-actions[bot]"
@@ -204,25 +208,11 @@ jobs:
       - name: Publish to Chocolatey
         if: env.CHOCOLATEY_API_KEY != ''
         run: |
-          sudo apt-get update && sudo apt-get install -y mono-devel nuget
+          dotnet tool install -g nuget
           nuget pack rendered/chocolatey/mdterm.nuspec -OutputDirectory rendered/chocolatey
           nuget push rendered/chocolatey/mdterm.*.nupkg \
             -Source "https://push.chocolatey.org/" \
             -ApiKey "$CHOCOLATEY_API_KEY"
-        continue-on-error: true
-
-      # ── Homebrew ────────────────────────────────────────────
-      - name: Publish to Homebrew tap
-        if: env.HOMEBREW_TAP_TOKEN != ''
-        run: |
-          git clone "https://x-access-token:$HOMEBREW_TAP_TOKEN@github.com/fasterinnerlooper/homebrew-tap.git" homebrew-tap
-          cp rendered/homebrew/mdterm.rb homebrew-tap/Formula/
-          cd homebrew-tap
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/mdterm.rb
-          git commit -m "mdterm: update to v${{ steps.version.outputs.version }}"
-          git push
         continue-on-error: true
 
       # ── Snap Store ──────────────────────────────────────────
