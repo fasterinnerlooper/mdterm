@@ -31,3 +31,6 @@ Thumbs.db
 
 ## Winget package generation
 manifests/**/*.yaml
+
+## Kilo Code Plans
+.kilo/plans/*.md
