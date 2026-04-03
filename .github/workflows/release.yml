@@ -229,7 +229,7 @@ jobs:
         uses: snapcore/action-build@b391f430cb2650fd359ed4d2cfe88b2c481800e0 # v1
       - name: Publish to Snap Store
         if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
-        uses: snapcore/action-publish@9334eecb267cfd97a0ce3c8654215d095927252f # v1
+        uses: snapcore/action-publish@214b86e5ca036ead1668c79afb81e550e6c54d40 # v1
         with:
           store: stable
           snap: ${{ steps.snap_build.outputs.snap }}
