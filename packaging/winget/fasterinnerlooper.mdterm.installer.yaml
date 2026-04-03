@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
 PackageIdentifier: fasterinnerlooper.mdterm
-PackageVersion: 1.1.5
+PackageVersion: VERSION_PLACEHOLDER
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
   - RelativeFilePath: mdterm.exe
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/fasterinnerlooper/mdterm/releases/download/v1.1.5/mdterm-win-x64.zip
-    InstallerSha256: 3b6629e46dff3a37c80c2096c2014248984e6a0d2e4acaed8f06f52180b04011
+    InstallerUrl: https://github.com/fasterinnerlooper/mdterm/releases/download/vVERSION_PLACEHOLDER/mdterm-win-x64.zip
+    InstallerSha256: SHA256_WIN_PLACEHOLDER
 ManifestType: installer
 ManifestVersion: 1.9.0

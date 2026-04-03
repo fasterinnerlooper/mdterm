@@ -142,6 +142,7 @@ jobs:
               -e "s/VERSION_PLACEHOLDER/${VERSION}/g" \
               -e "s/SHA256_PLACEHOLDER/${{ steps.hashes.outputs.source }}/g" \
               -e "s/SHA256_ARM64_PLACEHOLDER/${{ steps.hashes.outputs.osx_arm64 }}/g" \
+              -e "s/SHA256_WIN_PLACEHOLDER/${{ steps.hashes.outputs.win_x64 }}/g" \
               -e "s/SHA256_X64_PLACEHOLDER/${{ steps.hashes.outputs.osx_x64 }}/g" \
               -e "s/SHA256_LINUX_PLACEHOLDER/${{ steps.hashes.outputs.linux_x64 }}/g" \
               "$1"

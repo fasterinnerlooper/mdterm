@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
 PackageIdentifier: fasterinnerlooper.mdterm
-PackageVersion: 1.1.5
+PackageVersion: VERSION_PLACEHOLDER
 PackageLocale: en-US
 Publisher: fasterinnerlooper
 PublisherUrl: https://github.com/fasterinnerlooper
