@@ -28,3 +28,6 @@
 ## OS generated
 .DS_Store
 Thumbs.db
+
+## Winget package generation
+manifests/**/*.yaml

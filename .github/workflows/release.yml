@@ -48,7 +48,7 @@ jobs:
         run: dotnet tool install --global CycloneDX --version 5.4.0
 
       - name: Generate SBOM
-        run: dotnet CycloneDX MdTerm.csproj -o ./publish --filename sbom-bom.xml -p:Version=${{ steps.version.outputs.version }}
+        run: dotnet CycloneDX MdTerm.csproj -o ./publish --filename sbom-bom.xml
 
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
