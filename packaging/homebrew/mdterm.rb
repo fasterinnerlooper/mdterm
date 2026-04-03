@@ -1,9 +1,9 @@
 class Mdterm < Formula
   desc "Render Markdown files beautifully in the terminal"
   homepage "https://github.com/fasterinnerlooper/mdterm"
-  sha256 "SHA256_PLACEHOLDER"
+  sha256 ""
   license "MIT"
-  url "https://github.com/fasterinnerlooper/mdterm/archive/refs/tags/vVERSION_PLACEHOLDER.tar.gz"
+  url "https://github.com/fasterinnerlooper/mdterm/archive/refs/tags/v1.2.9.tar.gz"
 
   depends_on "dotnet@9" => :build
 
