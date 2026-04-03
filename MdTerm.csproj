@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <DebugType>none</DebugType>
+    <Version>1.1.12</Version>
+    <AssemblyVersion>1.1.12.0</AssemblyVersion>
+    <FileVersion>1.1.12.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
