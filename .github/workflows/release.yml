@@ -209,7 +209,7 @@ jobs:
       - name: Publish to Chocolatey
         if: env.CHOCOLATEY_API_KEY != ''
         run: |
-          dotnet tool install -g nuget
+          dotnet tool install -g NuGet.CommandLine
           nuget pack rendered/chocolatey/mdterm.nuspec -OutputDirectory rendered/chocolatey
           nuget push rendered/chocolatey/mdterm.*.nupkg \
             -Source "https://push.chocolatey.org/" \
