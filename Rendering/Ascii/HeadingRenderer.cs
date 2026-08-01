@@ -33,15 +33,15 @@ public sealed class HeadingRenderer : INodeRenderer
         switch (level)
         {
             case 1:
-                AnsiConsole.Write(new FigletText(_standardFont, text) { Color = Color.Cyan1 });
-                AnsiConsole.Write(new Rule().RuleStyle("cyan").DoubleBorder());
+                AnsiConsole.Write(new FigletText(_standardFont, text) { Color = Color.Blue });
+                AnsiConsole.Write(new Rule().RuleStyle("white on blue").DoubleBorder());
                 break;
             case 2:
                 AnsiConsole.WriteLine();
-                AnsiConsole.Write(new FigletText(_smallFont, text) { Color = Color.Cyan1 });
+                AnsiConsole.Write(new FigletText(_smallFont, text) { Color = Color.Blue });
                 break;
             case 3:
-                AnsiConsole.Write(new FigletText(_miniFont, text) { Color = Color.Cyan1 });
+                AnsiConsole.Write(new FigletText(_miniFont, text) { Color = Color.Blue });
                 break;
             case 4:
                 AnsiConsole.MarkupLine($"[bold]{text}[/]");
