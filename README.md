@@ -44,12 +44,17 @@ mdterm --help
 
 ## Build from source
 
-CI uses .NET 9.0.x and these commands:
+CI uses .NET 9.0.x. For a local build on any platform:
 
 ```bash
 dotnet restore
-dotnet build MdTerm.csproj -c Release -r linux-x64
+dotnet build MdTerm.csproj -c Release
 dotnet test -c Release --no-build
+```
+
+For a self-contained publish like the release workflow, use a runtime-specific publish command:
+
+```bash
 dotnet publish MdTerm.csproj -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o ./publish
 ```
 
@@ -69,4 +74,4 @@ Please report vulnerabilities privately through the repository's [Security tab](
 
 ## License
 
-The project packaging metadata declares mdterm as **MIT** licensed.
+mdterm is distributed under the **MIT** license.
