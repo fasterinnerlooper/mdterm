@@ -1,5 +1,12 @@
 # mdterm
 
+[![Build](https://github.com/fasterinnerlooper/mdterm/actions/workflows/build.yml/badge.svg)](https://github.com/fasterinnerlooper/mdterm/actions/workflows/build.yml)
+[![Build and Release](https://github.com/fasterinnerlooper/mdterm/actions/workflows/release.yml/badge.svg)](https://github.com/fasterinnerlooper/mdterm/actions/workflows/release.yml)
+[![Winget](https://img.shields.io/badge/winget-fasterinnerlooper.mdterm-2b579a?logo=windows-terminal&logoColor=white)](https://github.com/microsoft/winget-pkgs/tree/master/manifests/f/fasterinnerlooper/mdterm)
+[![Chocolatey](https://img.shields.io/badge/chocolatey-mdterm-80b5e3?logo=chocolatey&logoColor=white)](https://community.chocolatey.org/packages/mdterm)
+[![Scoop](https://img.shields.io/badge/scoop-mdterm-00b1e7)](https://github.com/fasterinnerlooper/scoop-bucket)
+[![AUR](https://img.shields.io/badge/AUR-mdterm-1793d1?logo=arch-linux&logoColor=white)](https://aur.archlinux.org/packages/mdterm)
+
 Render Markdown files as styled terminal output.
 
 ## Highlights
@@ -22,10 +29,6 @@ Render Markdown files as styled terminal output.
 
 ![mdterm help output](docs/images/help.png)
 
-## Requirements
-
-- .NET SDK 9.0 to build from source
-
 ## Installation
 
 ### Download a release
@@ -46,23 +49,6 @@ paru -S mdterm
 yay -S mdterm
 ```
 
-## Build and test
-
-The CI workflow builds mdterm across `win-x64`, `linux-x64`, `osx-x64`, and `osx-arm64`. The main commands used there are:
-
-```bash
-dotnet build MdTerm.csproj -c Release -r linux-x64
-dotnet test -c Release --no-build
-```
-
-For local development:
-
-```bash
-dotnet restore
-dotnet build MdTerm.csproj -c Release
-dotnet run --project MdTerm.csproj -- sample.md
-```
-
 ## Usage
 
 ```bash
@@ -72,13 +58,11 @@ mdterm --list-styles
 mdterm --help
 ```
 
-## Project layout
+Pass the path to a Markdown file and mdterm will render it directly in your terminal. Use `--help` to see the available CLI options in your installed build.
 
-- `Cli/` command-line parsing and help output
-- `Parsing/` Markdown-to-HTML parsing and table-of-contents generation
-- `Rendering/` terminal renderers
-- `Fonts/` embedded FIGlet fonts used for heading rendering
-- `packaging/` package manifests for release distribution
+## Contributing
+
+If you want to build, test, or contribute to mdterm, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Privacy
 
